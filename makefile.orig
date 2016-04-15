@@ -1,0 +1,35 @@
+
+FLIBS=    -lpacklib -lmathlib
+#FCUBA=    -lcuba 
+FCUBA=     ../lib-64/libcuba.a  
+#FLIBS=     ../lib-64-new/libpacklib.a \
+#           ../lib-64-new/libmathlib.a
+
+FBLAS=   /usr/lib/libblas.so.3
+COMPILE.f=gfortran -c -C -g
+LINK.f=gfortran -g
+FFLAGS= -g -lz
+
+
+
+sigmanuobj =   main.o  kernint.o massf.o  chebyshev.o\
+            gauleg.o scomplex.o g2.o pionmass.o eigenv.o kernel.o \
+           kabt.o av.o sde.o intsde.o vertex.o latticef.o \
+            sder.o intsder.o vertexr.o eigenv2.o cmaker.o cplotter.o \
+            sec.o decayc.o intq.o  traza.o interT.o  dscomplex.o \
+            trazad.o dscomplex2.o trazarh.o traza2.f derivative.o \
+            sderfit.o chi2_3.o scomplexfit.o dscomplexfit.o quadrature.o
+
+
+
+
+
+sigmanu:   $(sigmanuobj)
+	gfortran $(FFLAGS)  $(sigmanuobj)   $(FCUBA) $(FLIBS) $(FBLAS) libarpack_SUN4.a
+
+
+
+clean:
+	rm -rf *.o   rm sigmanu zndrv1 a.out
+ 
+

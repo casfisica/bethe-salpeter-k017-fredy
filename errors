@@ -1,0 +1,1 @@
+gfortran -g     main.o  kernint.o massf.o  chebyshev.o gauleg.o scomplex.o g2.o pionmass.o eigenv.o kernel.o kabt.o av.o sde.o intsde.o vertex.o latticef.o sder.o intsder.o vertexr.o eigenv2.o cmaker.o cplotter.o sec.o decayc.o int.o  traza.o interT.o  dscomplex.o trazad.o dscomplex2.f libarpack_SUN4.a  /home/rojas/lib/libcuba.a

@@ -1,0 +1,5 @@
+ sudo aptitude install libarpack2-dev libsuperlu3-dev gfortran
+
+command very usefull 
+wajig
+instead apt-get

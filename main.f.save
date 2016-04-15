@@ -1,0 +1,383 @@
+      program main
+      implicit none
+      include 'common.f'
+       double precision tol1,Bmu,Amu,mu,ppr(128),bbr(128),AAr(128),
+     . aaf1r(128,3),aaf1i(128,3),bbf1r(128,3),bbf1i(128,3),
+     . aaf2r(128,3),aaf2i(128,3),bbf2r(128,3),bbf2i(128,3),
+     . ppf1r(128,3),ppf1i(128,3),ppf2r(128,3),ppf2i(128,3),
+     . mcurr(0:10),ppc(250),cc(250),ccin(128),alatt,blatt,
+     . mhv(0:10),rtsec,z2r,z2rh,norm,func,fpi,rh,xpa(128),wpa(128),
+     . xpb(128),wpb(128),xpc(128),wpc(128),ab(2)
+
+       double complex z2,z4,z2h,z4h
+                
+      integer i,j,im,im0,nres,counter,nm_,nab(3)
+      logical refinement
+ 
+      external kernint
+      external massf
+      external ktr
+      external eigenv
+      external sde
+      external sder
+
+      open (1,file="salida1.out",status="new")
+      open (2,file="salida2.out",status="new")
+      ! real axis sde files
+      open (3,file="salida3.out",status="new")
+      open (4,file="salida4.out",status="new")
+      open (8,file="salida8.out",status="new")
+      open (9,file="salida9.out",status="new")
+      ! end  real axis sde
+
+      open (10,file=
+     . "datafiles/bbr-s82-mh1p4-cd2011-w0p4-a2dm3-b1-na20-nb108-L4.dat",
+     . status="old")
+      open (11,file=
+     . "datafiles/bbi-s82-mh1p4-cd2011-w0p4-a2dm3-b1-na20-nb108-L4.dat",
+     . status="old")
+      open (12,file=
+     . "datafiles/aar-s82-mh1p4-cd2011-w0p4-a2dm3-b1-na20-nb108-L4.dat",
+     . status="old")
+      open (13,file=
+     . "datafiles/aai-s82-mh1p4-cd2011-w0p4-a2dm3-b1-na20-nb108-L4.dat",
+     . status="old")
+ 
+
+
+      open (31,file=
+     ."datafiles/bbr-c905-mh3p4-cd2011-w0p4-a2dm3-b1-na20-nb108-L4.dat",
+     .  status="old")
+      open (32,file=
+     ."datafiles/bbi-c905-mh3p4-cd2011-w0p4-a2dm3-b1-na20-nb108-L4.dat",
+     . status="old")
+      open (33,file=
+     ."datafiles/aar-c905-mh3p4-cd2011-w0p4-a2dm3-b1-na20-nb108-L4.dat",
+     . status="old")
+      open (34,file=
+     ."datafiles/aai-c905-mh3p4-cd2011-w0p4-a2dm3-b1-na20-nb108-L4.dat",
+     . status="old")
+
+      open (35,file="datafiles/F-Ds-nm0-12feb.dat",
+     . status="old")
+ 
+      
+
+      ! complex sde files
+      open (14,file="salida14.out",status="new")
+      open (15,file="salida15.out",status="new")
+      open (16,file="salida16.out",status="new")
+      open (17,file="salida17.out",status="new")
+      open (18,file="salida18.out",status="new")
+      open (19,file="salida19.out",status="new")
+      open (20,file="datafiles/x0_lr.dat",status="old")
+      !  end sde 
+      open (22,file="kbsr.out",status="new")
+      open (23,file="kbsi.out",status="new")
+      open (24,file="datafiles/kbsr.dat",status="old")
+      open (25,file="datafiles/kbsi.dat",status="old")
+      open (26,file="kijr.out",status="unknown")
+      open (27,file="kiji.out",status="unknown")
+      open (28,file="kijr2.out",status="unknown")
+      open (29,file="kiji2.out",status="unknown")
+      open (30,file="F.out",status="unknown")
+
+      np = 128 ! for fermions internal calculation
+      np2 =128 ! "
+      ns= 64   ! for kernel      
+      nt= 20    !16 ! change in common.f ! kernel
+      nzq=20  ! "
+      nres = 1 !  resonancia 1,2,3
+      refinement = .false.
+c      if(nres.gt.1)refinement = .false.
+      nm_ = 4  ! number of chevychev moments  for kernel go to 20 to undertand
+      nm  = nm_
+ 
+      lamb_bs=dsqrt(16d0)  ! UV cutuff for the bethe salpeter
+      
+ 
+
+      do 114 i=1,250
+      read(20,*)ppc(i),cc(i)
+      ppc(i)= dsqrt(ppc(i))
+114   continue
+
+      do 118 j = 1,3
+      do 119 i = 1,np
+
+      read(10,200)ppf1r(i,j),ppf1i(i,j),BBf1r(i,j)
+      read(11,200)ppf1r(i,j),ppf1i(i,j),BBf1i(i,j)
+      read(12,200)ppf1r(i,j),ppf1i(i,j),AAf1r(i,j)
+      read(13,200)ppf1r(i,j),ppf1i(i,j),AAf1i(i,j)
+
+
+
+      read(31,200)ppf2r(i,j),ppf2i(i,j),BBf2r(i,j)
+      read(32,200)ppf2r(i,j),ppf2i(i,j),BBf2i(i,j)
+      read(33,200)ppf2r(i,j),ppf2i(i,j),AAf2r(i,j)
+      read(34,200)ppf2r(i,j),ppf2i(i,j),AAf2i(i,j)
+
+
+
+119   continue
+118   continue
+
+
+      linear= .true.
+
+
+       
+       mu = 1d0  ! pseudo renormalization scale
+       eplus = 1d0/2d0
+       eminus= 1d0/2d0
+       
+
+
+
+c      call  gauleg(0d0,1d0,xp,wp,np)
+      ab(1)= 0.0002d0/lamb_bs
+      ab(2)= 1d0 !4d0/lamb_bs
+      nab(1) = 20          ! any modification here also change in sde.f
+      nab(2) = 108 
+      nab(3) = np-nab(1)-nab(2)
+      write(2,*)"ab(1),ab(2)",ab(1),ab(2)
+      write(2,*)"nab(1),nab(2),nab(3)",nab(1),nab(2),nab(3)
+      call  gauleg(0d0  ,ab(1),xpa,wpa,nab(1))
+      call  gauleg(ab(1),ab(2),xpb,wpb,nab(2))
+c     call  gauleg(ab(2),1d0  ,xpc,wpc,nab(3))
+      do 124 i =1,nab(1)
+      xp(i)= xpa(i)
+      wp(i)= wpa(i)
+124   continue      
+      do 125 i =1,nab(2)
+      xp(nab(1)+i)= xpb(i)
+      wp(nab(1)+i)= wpb(i)
+125   continue
+      do 126 i =1,nab(3)
+c      xp(i+nab(1)+nab(2))= xpc(i)
+c      wp(i+nab(1)+nab(2))= wpc(i)
+126   continue
+
+
+      call  gauleg(0d0,1d0,xv,wv,np2)
+c      call  gauleg(0d0,1d0,xs,ws,ns)
+
+      call  gauleg(0d0  ,sab(1),xsa,wsa,nsab(1))
+      call  gauleg(ab(1),sab(2),xsb,wsb,nsab(2))
+c     call  gauleg(ab(2),1d0  ,xpc,wpc,nab(3))
+      do 124 i =1,nab(1)
+      xp(i)= xpa(i)
+      wp(i)= wpa(i)
+124   continue
+      do 125 i =1,nab(2)
+      xp(nab(1)+i)= xpb(i)
+      wp(nab(1)+i)= wpb(i)
+125   continue
+
+      call  gauleg(-1d0,1d0,xq,wq,nzq)
+      call  gauleg(-1d0,1d0,xt,wt,nt)
+      write(2,*)'xt'
+      write(2,*)(xt(i),i=1,nt)
+
+      tol1 = 0.01d0
+
+      pmin2= 1d-14
+
+
+     
+
+      
+      do 115 i=1,np
+      ppr(i) = (1d0+xp(i))/(1d0-xp(i))
+      AAr(i)= alatt(ppr(i)**2)
+      BBr(i)= blatt(ppr(i)**2)
+115   continue
+     
+
+
+
+      im0 = 0
+c      do 116 im = im0,10
+
+      
+      mhv(1) = 1.4d0  !+im*0.1d0
+      mhv(2) = 3.4d0  !10d0   !4.2d0 
+      
+
+      mh = mhv(1)
+      mh2 =mhv(2)
+
+  
+
+      mcurr(1)=82d0/1000d0      !5d0/1000d0 !  0.1d0/1000d0
+      mcurr(2)=0.905d0      !3.71d0           !           3.4d0/1000d0     !0.2d0
+     
+
+         
+
+
+      write(1,*)"# mcurr(1),mh(1)"   ,mcurr(1),mh
+      write(2,*)"# mcurr(1),mh(1)"   ,mcurr(1),mh
+      write(3,*)"# mcurr(1),mh(1)"   ,mcurr(1),mh
+      write(4,*)"# mcurr(1),mh(1)"   ,mcurr(1),mh
+      write(8,*)"# mcurr(1),mh(1)"   ,mcurr(1),mh
+      write(9,*)"# mcurr(1),mh(1)"   ,mcurr(1),mh
+      write(14,*)"# mcurr(1),mh(1)"   ,mcurr(1),mh
+      write(15,*)"# mcurr(1),mh(1)"   ,mcurr(1),mh
+      write(16,*)"# mcurr(1),mh(1)"   ,mcurr(1),mh
+      write(17,*)"# mcurr(1),mh(1)"   ,mcurr(1),mh
+      write(18,*)"# mcurr(1),mh(1)"   ,mcurr(1),mh
+      write(19,*)"# mcurr(1),mh(1)"   ,mcurr(1),mh
+      write(22,*)"# mcurr(1),mh(1)"   ,mcurr(1),mh
+      write(23,*)"# mcurr(1),mh(1)"   ,mcurr(1),mh
+      write(26,*)"# mcurr(1),mh(1)"   ,mcurr(1),mh
+      write(27,*)"# mcurr(1),mh(1)"   ,mcurr(1),mh
+      write(28,*)"# mcurr(1),mh(1)"   ,mcurr(1),mh
+      write(29,*)"# mcurr(1),mh(1)"   ,mcurr(1),mh
+      write(30,*)"# mcurr(1),mh(1)"   ,mcurr(1),mh
+        
+       
+  
+
+10     format(D25.16,D25.16)
+200    format(D25.16,D25.16,D25.16)
+ 
+        print = .true.
+        flag2 = .false.
+c       linear= .true.
+        init = .true.
+        printkabt = .true.
+
+        ! fermion 1
+c        sder(mu,B(mu),A(mu),lambda,128,ppr,bbr,aar)
+c        if(im0.eq.im)then
+c        call sder(19d0,mcurr(1),1d0,100d0,128,ppr,bbr,aar,z2r)
+c        call massf(128,ppr,bbr,mu,Bmu)
+c        call massf(128,ppr,aar,mu,Amu)
+c        else  
+c        endif
+c       Bmu = 1.853620201315503d0             !0.303368936d0
+c       Amu = 1.180105380790223d0                        !1.6099994d0
+       write(2,*)'mu,Bmu'
+       write(2,10)mu,Bmu
+       write(2,*)'mu,Amu'
+       write(2,10)mu,Amu
+c       call sde(mh,mu,Bmu,Amu,mcurr(1),dsqrt(lamb_bs**2+mh**2/4d0),
+c     . np2,ccin,z2,z4,ab,nab,bbf1r,bbf1i,aaf1r,aaf1i)
+      write(2,*)"z2",z2
+      write(2,*)"z4",z4 
+      write(*,*)"complex sde ready"
+      write(2,*)"complex sde ready"
+      do 120 j = 1,3
+      do 121 i = 1,np
+      BB(i,j)= BBf1r(i,j)+(0d0,1d0)*BBf1i(i,j)
+      aa(i,j)= aaf1r(i,j)+(0d0,1d0)*aaf1i(i,j)
+c       BB(i,j)= BBf2r(i,j)+(0d0,1d0)*BBf2i(i,j)
+c       aa(i,j)= aaf2r(i,j)+(0d0,1d0)*aaf2i(i,j)
+
+121   continue
+120   continue
+
+
+       ! fermion 2
+c        sder(mu,B(mu),A(mu),lambda,128,ppr,bbr,aar,z2r)
+c       call sder(19d0,mcurr(2),1d0,100d0,128,ppr,bbr,aar,z2rh)
+c       call massf(128,ppr,bbr,mu,Bmu)
+c       call massf(128,ppr,aar,mu,Amu)
+       write(2,*)'mu,Bmu',mu,Bmu
+       write(2,*)'mu,Amu',mu,Amu
+c      call sde(mh2,mu,Bmu,Amu,mcurr(2),dsqrt(lamb_bs**2+mh2**2/4d0),
+c     . np2,ccin,z2h,z4h,ab,nab,bbf2r,bbf2i,aaf2r,aaf2i) 
+      write(*,*)"complex sde ready"
+      write(2,*)"complex sde ready"
+      do 122 j = 1,3
+      do 123 i = 1,np
+      BB2(i,j)= BBf2r(i,j)+(0d0,1d0)*BBf2i(i,j)  
+      aa2(i,j)= aaf2r(i,j)+(0d0,1d0)*aaf2i(i,j)
+c      BB2(i,j)= BBf1r(i,j)+(0d0,1d0)*BBf1i(i,j)  ! comment if f1 diff of f2
+c      aa2(i,j)= aaf1r(i,j)+(0d0,1d0)*aaf1i(i,j)
+123   continue
+122   continue
+
+
+
+
+       lambda = lamb_bs
+       write(2,*)"np,np2,nzq,ns,nt,nm",np,np2,nzq,ns,nt,nm
+       write(2,*)"mh,mu,Bmu,Amu,lambda,np2",mh,mu,Bmu,Amu,
+     . lambda,np2   
+
+116    continue
+
+
+
+       
+         
+      
+c        if(nres.eq.1)then 
+c        nm = 0  
+c        call sec(5.89d0,5.91d0,
+c     .  0.001d0,nres,rtsec)
+c        write(2,*)"raw pion mass",rtsec           
+c        call   decayc(rtsec,lambda,mh,mh2,ab,nab,aa,bb,aa2,bb2,
+c     .  z2r,z2rh,norm,fpi,rh)
+c        write(2,*)"raw fpi",fpi
+c       write(2,*)"raw-fpi-from-rh/z4",rh*(mcurr(1)+mcurr(2))/rtsec**2
+c       write(2,*)"z2,z4,z2h,z4h",z2,z4,z2h,z4h
+c
+c        nm = nm_
+c        call sec(rtsec*(1d0-0.0005d0),rtsec*(1d0+tol1),
+c     .  0.001d0,nres,rtsec)
+c        write(2,*)"improved pion mass",rtsec 
+c        else
+c        nm = nm_
+c        rtsec =   2.24191075d0       !1.09148657d0          !5.36455603d0
+c        call sec(rtsec*(1d0-0.0005d0),rtsec*(1d0+0.001d0),
+c     .  0.001d0,nres,rtsec)
+c        write(2,*)"improved pion mass",rtsec
+c        endif
+c        nm = 4 
+        rtsec=  2.21910964d0        !2.24191075d0         !2.1338608d0   !2.19925119d0  !0.137697663d0  0.01997484d0                 !1.414d0
+        call  eigenv(rtsec,nres,func)
+     
+         
+        call   decayc(rtsec,lambda,mh,mh2,ab,nab,aa,bb,aa2,bb2,
+     .  z2r,z2rh,norm,fpi,rh)
+        write(2,*)"fpi",fpi
+       write(2,*)"fpi-from-rh/z4",rh*(mcurr(1)+mcurr(2))/rtsec**2
+       write(2,*)"z2,z4,z2h,z4h",z2,z4,z2h,z4h
+
+
+
+         if(refinement.eqv..true.)then
+          nm = 4 ! nm_
+         call  eigenv(rtsec,nres,func)
+         call  decayc(rtsec,lambda,mh,mh2,ab,nab,aa,bb,aa2,bb2,
+     .   z2r,z2rh,norm,fpi,rh)
+
+
+       write(2,*)"refined fpi",fpi
+       write(2,*)"improved pion mass",rtsec
+       write(2,*)"improved-fpi-from-rh/z4",
+     . rh*(mcurr(1)+mcurr(2))/rtsec**2
+       write(2,*)"z2,z4,z2h,z4h",z2,z4,z2h,z4h
+       write(2,*)"np,np2,nzq,ns,nt,nm",np,np2,nzq,ns,nt,nm
+       write(2,*)"mh,mu,Bmu,Amu,lambda,np2",mh,mu,Bmu,Amu,
+     . lambda,np2
+
+
+         else
+         endif
+
+           
+
+c116    continue
+
+
+       write(2,*)"refinement=",refinement
+ 
+      
+
+
+      end
+
