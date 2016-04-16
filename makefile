@@ -2,7 +2,7 @@
 FLIBS=    -lpacklib -lmathlib
 #FCUBA=    -lcuba 
 #FCUBA=     ../lib-64/libcuba.a  
-FCUBA= ../lib/libcuba-g.a
+FCUBA= ./lib/libcuba-g.a
 #FLIBS=     ../lib-64-new/libpacklib.a \
 #           ../lib-64-new/libmathlib.a
 
@@ -30,9 +30,15 @@ sigmanuobj =   main.o  kernint.o massf.o  chebyshev.o\
 sigmanu:   $(sigmanuobj)
 	gfortran $(FFLAGS)  $(sigmanuobj) -o $@   $(FCUBA) $(FLIBS)  $(FBLAS) $(ARPACK)   libarpack_SUN4.a 
 
+psigmanu:   $(sigmanuobj)
+	gfortran $(FFLAGS) -fopenmp  $(sigmanuobj) -o $@   $(FCUBA) $(FLIBS)  $(FBLAS) $(ARPACK)   libarpack_SUN4.a 
+
 
 
 clean:
-	rm -rf *.o   rm sigmanu zndrv1 a.out
- 
+	rm -rf *.o   rm sigmanu zndrv1 psigmanu
+
+cleanout:
+	rm -rf *.out
+
 
